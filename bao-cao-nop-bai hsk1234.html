@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Báo cáo nộp bài · Huierchinese</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --seal:#AF3029; --seal-dark:#8a2620; --jade:#3C7A5C; --gold:#B4883A;
+    --paper:#FBF6EC; --ink:#2A2622; --ink-soft:#5B5347; --line:#E4D9C4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Be Vietnam Pro', Arial, sans-serif;
+    background:var(--paper); color:var(--ink); min-height:100vh;
+    padding:24px 16px 60px;
+  }
+  .wrap{max-width:980px; margin:0 auto;}
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:24px; flex-wrap:wrap; gap:12px;
+  }
+  h1{font-size:22px; margin:0; color:var(--seal-dark);}
+  h1 span{display:block; font-size:13px; font-weight:400; color:var(--ink-soft); margin-top:2px;}
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:22px; box-shadow:0 2px 10px rgba(0,0,0,.04);
+  }
+  /* ---------- Login ---------- */
+  #loginCard{max-width:380px; margin:80px auto 0;}
+  #loginCard h2{margin-top:0; font-size:18px; color:var(--seal-dark);}
+  #loginCard label{font-size:13px; font-weight:600; color:var(--ink-soft); display:block; margin:14px 0 5px;}
+  #loginCard input{
+    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px;
+    font-size:14px; font-family:inherit;
+  }
+  #loginCard input:focus{outline:none; border-color:var(--gold);}
+  #loginBtn{
+    margin-top:18px; width:100%; padding:11px; border:none; border-radius:8px;
+    background:var(--seal); color:#fff; font-size:14.5px; font-weight:700; cursor:pointer;
+  }
+  #loginBtn:hover{background:var(--seal-dark);}
+  #loginErr{color:var(--seal); font-size:13px; margin-top:10px; min-height:16px;}
+  /* ---------- Report ---------- */
+  #reportView{display:none;}
+  .toolbar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:18px;
+  }
+  .toolbar label{font-size:13px; font-weight:600; color:var(--ink-soft);}
+  .toolbar input[type=date], .toolbar input[type=text]{
+    padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:13.5px; font-family:inherit;
+  }
+  .btn{
+    padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:#fff;
+    font-size:13.5px; font-weight:600; cursor:pointer; color:var(--ink);
+  }
+  .btn.primary{background:var(--jade); border-color:var(--jade); color:#fff;}
+  .btn.primary:hover{opacity:.9;}
+  .btn.ghost{margin-left:auto;}
+  .stat-pills{display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;}
+  .pill{
+    background:#F6EEDD; border:1px solid var(--line); border-radius:999px;
+    padding:6px 14px; font-size:13px; font-weight:600; color:var(--ink-soft);
+  }
+  .pill b{color:var(--seal-dark); font-size:15px;}
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  th{
+    text-align:left; padding:10px 12px; background:#F6EEDD; color:var(--ink-soft);
+    font-size:12.5px; text-transform:uppercase; letter-spacing:.03em; border-bottom:2px solid var(--line);
+  }
+  td{padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
+  tr:hover td{background:#FCFAF3;}
+  .empty{text-align:center; padding:50px 20px; color:var(--ink-soft); font-size:14px;}
+  .badge-app{
+    display:inline-block; padding:2px 8px; border-radius:6px; background:#EAF3EE; color:var(--jade);
+    font-size:11.5px; font-weight:700;
+  }
+  .count-cell{color:var(--jade); font-weight:700;}
+  .count-cell.low{color:var(--seal);}
+  footer{text-align:center; color:var(--ink-soft); font-size:12px; margin-top:30px;}
+  .app-tabs{
+    display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;
+  }
+  .app-tab{
+    padding:10px 22px; border-radius:10px; border:1.5px solid var(--line); background:#fff;
+    font-size:14px; font-weight:700; cursor:pointer; color:var(--ink-soft);
+    font-family:inherit; transition:.15s;
+  }
+  .app-tab:hover{border-color:var(--gold);}
+  .app-tab.active{background:var(--seal); border-color:var(--seal); color:#fff;}
+  #loadingMsg{text-align:center; padding:30px; color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== LOGIN ===== -->
+  <div id="loginCard" class="card">
+    <h2>🔒 Đăng nhập xem báo cáo</h2>
+    <p style="font-size:13px;color:var(--ink-soft);margin:0;">Trang này chỉ dành cho giáo viên. Đăng nhập bằng tài khoản đã tạo trong Firebase Authentication.</p>
+    <label for="loginEmail">Email</label>
+    <input type="email" id="loginEmail" placeholder="ban@example.com">
+    <label for="loginPass">Mật khẩu</label>
+    <input type="password" id="loginPass" placeholder="••••••••">
+    <button id="loginBtn">Đăng nhập</button>
+    <div id="loginErr"></div>
+  </div>
+
+  <!-- ===== REPORT ===== -->
+  <div id="reportView">
+    <header>
+      <h1 id="pageTitle">Báo cáo nộp bài Ngữ pháp
+        <span>Trung tâm Tiếng Trung Hà Lê · Huierchinese</span>
+      </h1>
+      <button class="btn" id="logoutBtn">Đăng xuất</button>
+    </header>
+
+    <div class="app-tabs" id="appTabs">
+      <button class="app-tab" data-app="hsk1">HSK1</button>
+      <button class="app-tab" data-app="hsk2-chuan">HSK2</button>
+      <button class="app-tab" data-app="hsk3">HSK3</button>
+      <button class="app-tab" data-app="hsk4">HSK4</button>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <label for="dateInput">Ngày:</label>
+        <input type="date" id="dateInput">
+        <button class="btn" id="todayBtn">Hôm nay</button>
+        <button class="btn" id="allTimeBtn">Xem tất cả</button>
+        <label for="searchInput" style="margin-left:8px;">Tìm học sinh:</label>
+        <input type="text" id="searchInput" placeholder="Nhập tên...">
+        <button class="btn primary ghost" id="exportBtn">⬇ Xuất CSV</button>
+      </div>
+
+      <div class="stat-pills">
+        <div class="pill">Lượt nộp bài: <b id="statCount">0</b></div>
+        <div class="pill">Học sinh khác nhau: <b id="statStudents">0</b></div>
+      </div>
+
+      <div id="loadingMsg" style="display:none;">Đang tải dữ liệu...</div>
+      <div id="tableWrap"></div>
+    </div>
+
+    <footer>Dữ liệu lấy từ Firestore · project hsk1-new-huierchinese</footer>
+  </div>
+
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBAqBimxOYXf_Ei0WoNdkW8iLgQpzrOac4",
+  authDomain: "hsk1-new-huierchinese.firebaseapp.com",
+  projectId: "hsk1-new-huierchinese",
+  storageBucket: "hsk1-new-huierchinese.firebasestorage.app",
+  messagingSenderId: "555418119687",
+  appId: "1:555418119687:web:dc0aa859ec95b050ec04a2"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// Danh sách app hiển thị trong hàng tab, khớp với giá trị "app" đã ghi log ở từng app học từ vựng
+const APP_LABELS = {'hsk1':'HSK1', 'hsk2-chuan':'HSK2', 'hsk3':'HSK3', 'hsk4':'HSK4'};
+let APP_ID = 'hsk1'; // app đang được chọn xem, mặc định HSK1 khi vừa đăng nhập
+
+let allSubmissions = []; // toàn bộ dữ liệu đã tải cho phạm vi đang xem
+let currentMode = 'today'; // 'today' | 'all'
+
+/* ---------------- CHUYỂN TAB APP ---------------- */
+document.querySelectorAll('.app-tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    APP_ID = btn.dataset.app;
+    document.querySelectorAll('.app-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('searchInput').value = '';
+    if(currentMode === 'all') loadAll(); else loadToday();
+  });
+});
+function setActiveTab(){
+  document.querySelectorAll('.app-tab').forEach(b=>{
+    b.classList.toggle('active', b.dataset.app === APP_ID);
+  });
+}
+
+/* ---------------- AUTH ---------------- */
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+
+function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.textContent = '';
+  if(!email || !pass){ errEl.textContent = 'Vui lòng nhập đầy đủ email và mật khẩu.'; return; }
+  auth.signInWithEmailAndPassword(email, pass).catch(err=>{
+    errEl.textContent = 'Đăng nhập thất bại: sai email hoặc mật khẩu.';
+    console.warn(err);
+  });
+}
+
+document.getElementById('logoutBtn').addEventListener('click', ()=> auth.signOut());
+
+auth.onAuthStateChanged(user=>{
+  if(user){
+    document.getElementById('loginCard').style.display = 'none';
+    document.getElementById('reportView').style.display = 'block';
+    setActiveTab();
+    initReportDefaults();
+    loadToday();
+  }else{
+    document.getElementById('loginCard').style.display = 'block';
+    document.getElementById('reportView').style.display = 'none';
+  }
+});
+
+/* ---------------- REPORT LOGIC ---------------- */
+function vnDateStr(d){
+  // Định dạng khớp với 'clientDate' đã lưu trong app (toLocaleDateString('vi-VN') -> dd/mm/yyyy)
+  return d.toLocaleDateString('vi-VN');
+}
+function initReportDefaults(){
+  const input = document.getElementById('dateInput');
+  const today = new Date();
+  input.value = today.toISOString().slice(0,10); // yyyy-mm-dd cho input type=date
+}
+
+document.getElementById('todayBtn').addEventListener('click', loadToday);
+document.getElementById('allTimeBtn').addEventListener('click', loadAll);
+document.getElementById('dateInput').addEventListener('change', loadSelectedDate);
+document.getElementById('searchInput').addEventListener('input', renderTable);
+document.getElementById('exportBtn').addEventListener('click', exportCsv);
+
+function loadToday(){
+  currentMode = 'today';
+  initReportDefaults();
+  loadSelectedDate();
+}
+function loadSelectedDate(){
+  currentMode = 'date';
+  const raw = document.getElementById('dateInput').value; // yyyy-mm-dd
+  if(!raw) return;
+  const [y,m,d] = raw.split('-');
+  const target = new Date(Number(y), Number(m)-1, Number(d));
+  const dateStr = vnDateStr(target);
+  fetchAndRender(()=> db.collection('submissions').where('app','==', APP_ID).where('clientDate','==', dateStr).get());
+}
+function loadAll(){
+  currentMode = 'all';
+  fetchAndRender(()=> db.collection('submissions').where('app','==', APP_ID).get());
+}
+
+function fetchAndRender(queryFn){
+  document.getElementById('loadingMsg').style.display = 'block';
+  document.getElementById('tableWrap').innerHTML = '';
+  queryFn().then(snap=>{
+    allSubmissions = snap.docs.map(doc=>{
+      const data = doc.data();
+      let ts = null;
+      if(data.timestamp && data.timestamp.toDate) ts = data.timestamp.toDate();
+      return {
+        id: doc.id,
+        studentName: data.studentName || '(không rõ)',
+        lessonTitle: data.lessonTitle || '',
+        app: data.app || '',
+        answeredCount: data.answeredCount != null ? data.answeredCount : null,
+        totalCount: data.totalCount != null ? data.totalCount : null,
+        clientDate: data.clientDate || '',
+        timestamp: ts
+      };
+    });
+    // Sắp xếp mới nhất lên đầu (client-side, tránh phải tạo composite index trên Firestore)
+    allSubmissions.sort((a,b)=>{
+      if(!a.timestamp) return 1;
+      if(!b.timestamp) return -1;
+      return b.timestamp - a.timestamp;
+    });
+    document.getElementById('loadingMsg').style.display = 'none';
+    renderTable();
+  }).catch(err=>{
+    document.getElementById('loadingMsg').style.display = 'none';
+    document.getElementById('tableWrap').innerHTML = '<div class="empty">Không tải được dữ liệu: '+escapeHtml(err.message)+'</div>';
+    console.warn(err);
+  });
+}
+
+function renderTable(){
+  const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+  const filtered = keyword
+    ? allSubmissions.filter(s=> s.studentName.toLowerCase().includes(keyword))
+    : allSubmissions;
+
+  document.getElementById('statCount').textContent = filtered.length;
+  document.getElementById('statStudents').textContent = new Set(filtered.map(s=>s.studentName)).size;
+
+  if(filtered.length === 0){
+    document.getElementById('tableWrap').innerHTML = '<div class="empty">Không có lượt nộp bài nào trong phạm vi đang xem.</div>';
+    return;
+  }
+
+  const rows = filtered.map(s=>{
+    const timeStr = s.timestamp
+      ? s.timestamp.toLocaleDateString('vi-VN') + ' ' + s.timestamp.toLocaleTimeString('vi-VN')
+      : '(đang xử lý...)';
+    const countClass = (s.answeredCount!=null && s.totalCount && s.answeredCount < s.totalCount) ? 'count-cell low' : 'count-cell';
+    const countStr = (s.answeredCount!=null && s.totalCount!=null) ? (s.answeredCount+' / '+s.totalCount) : '—';
+    return `<tr>
+      <td>${escapeHtml(s.studentName)}</td>
+      <td>${escapeHtml(s.lessonTitle)}</td>
+      <td class="${countClass}">${countStr}</td>
+      <td>${timeStr}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tableWrap').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Học sinh</th><th>Bài học</th><th>Số câu đã làm</th><th>Thời gian nộp</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function exportCsv(){
+  const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+  const filtered = keyword
+    ? allSubmissions.filter(s=> s.studentName.toLowerCase().includes(keyword))
+    : allSubmissions;
+  if(filtered.length === 0){ alert('Không có dữ liệu để xuất.'); return; }
+
+  const header = ['Học sinh','Bài học','Số câu đã làm','Tổng số câu','Thời gian nộp'];
+  const lines = [header.join(',')];
+  filtered.forEach(s=>{
+    const timeStr = s.timestamp ? (s.timestamp.toLocaleDateString('vi-VN')+' '+s.timestamp.toLocaleTimeString('vi-VN')) : '';
+    const row = [s.studentName, s.lessonTitle, s.answeredCount ?? '', s.totalCount ?? '', timeStr]
+      .map(v=> '"' + String(v).replace(/"/g,'""') + '"');
+    lines.push(row.join(','));
+  });
+  const csv = '\ufeff' + lines.join('\n'); // BOM để Excel hiển thị đúng tiếng Việt
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'bao-cao-nop-bai-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+</body>
+</html>
