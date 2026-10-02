@@ -120,7 +120,8 @@
 
     <div class="app-tabs" id="appTabs">
       <button class="app-tab" data-app="hsk1">HSK1</button>
-      <button class="app-tab" data-app="hsk2-chuan">HSK2</button>
+      <button class="app-tab" data-app="hsk2-chuan">HSK2(2.0)</button>
+      <button class="app-tab" data-app="hsk2-new">HSK2(3.0)</button>
       <button class="app-tab" data-app="hsk3">HSK3</button>
       <button class="app-tab" data-app="hsk4">HSK4</button>
     </div>
@@ -164,7 +165,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // Danh sách app hiển thị trong hàng tab, khớp với giá trị "app" đã ghi log ở từng app học từ vựng
-const APP_LABELS = {'hsk1':'HSK1', 'hsk2-chuan':'HSK2', 'hsk3':'HSK3', 'hsk4':'HSK4'};
+const APP_LABELS = {'hsk1':'HSK1', 'hsk2-chuan':'HSK2', 'hsk2-new':'HSK2(3.0)', 'hsk3':'HSK3', 'hsk4':'HSK4'};
 let APP_ID = 'hsk1'; // app đang được chọn xem, mặc định HSK1 khi vừa đăng nhập
 
 let allSubmissions = []; // toàn bộ dữ liệu đã tải cho phạm vi đang xem
